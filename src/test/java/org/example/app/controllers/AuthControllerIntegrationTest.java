@@ -135,21 +135,21 @@ class AuthControllerIntegrationTest {
     @DisplayName("Should not register user if username already exists")
     @Sql(scripts = "/scripts/insert-test-user.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     void signUp_usernameAlreadyExists() throws Exception {
-        // Arrange
+        long initialUserCount = userRepository.count(); // Отримуємо початкову кількість користувачів (має бути 2: testuser, adminuser)
+
         SignupRequest signupRequest = new SignupRequest();
-        signupRequest.setUsername("testuser"); // Username, який вже існує завдяки @Sql
-        signupRequest.setEmail("another@example.com");
+        signupRequest.setUsername("testuser"); // Спроба зареєструвати існуючого
+        signupRequest.setEmail("another@example.com"); // Уникайте дублювання email, навіть якщо username зайнятий
         signupRequest.setPassword("password");
 
-        // Act & Assert
         mockMvc.perform(post("/api/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(signupRequest)))
-                .andExpect(status().isBadRequest()) // Очікуємо 400 Bad Request
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Error: Username is already taken!"));
 
-        // Assert - Перевіряємо, що новий користувач не був створений
-        assertThat(userRepository.count()).isEqualTo(1); // Має бути лише один "testuser"
+        // Перевіряємо, що кількість користувачів не змінилася
+        assertThat(userRepository.count()).isEqualTo(initialUserCount);// Має бути лише один "testuser"
     }
 
     // Тест для захищеного JWT ендпоінта (наприклад, оновлення профілю)
