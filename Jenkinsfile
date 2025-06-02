@@ -75,8 +75,8 @@ pipeline {
                     docker.build("LB5:${appVersion}", ".")
                     // Замініть 'your-username/your-app' на ім'я вашого образу
                 }
-            } */
-        }
+            }
+        } */
 
         // Опціональний етап: Пуш Docker-образу в реєстр (наприклад, Docker Hub)
         // stage('Push Docker Image') {
