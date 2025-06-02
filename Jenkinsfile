@@ -2,13 +2,9 @@ pipeline {
     agent any // Запускати пайплайн на будь-якому доступному агентові
 
     tools {
-        // Якщо у Jenkins глобально налаштовані інструменти JDK та Maven,
-        // вкажіть їх тут. Наприклад:
-        // jdk 'AdoptOpenJDK-17' // Назва вашого налаштування JDK у Jenkins
-        // maven 'Maven-3.9.6' // Назва вашого налаштування Maven у Jenkins
-        // Якщо ви використовуєте wrapper (./mvnw), то секція tools може бути не потрібна,
-        // оскільки wrapper сам подбає про завантаження потрібної версії.
-    }
+            jdk 'JDK-21' // ТОЧНО та сама назва, яку ви дали в Jenkins Tools для JDK
+            maven 'Maven-3.2.2'   // ТОЧНО та сама назва, яку ви дали в Jenkins Tools для Maven
+        }
 
     stages {
         stage('Checkout') {
