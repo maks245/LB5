@@ -3,7 +3,7 @@ pipeline {
 
     tools {
             jdk 'JDK-21' // ТОЧНО та сама назва, яку ви дали в Jenkins Tools для JDK
-            maven 'Maven-3.2.2'   // ТОЧНО та сама назва, яку ви дали в Jenkins Tools для Maven
+//             maven 'Maven-3.2.2'   // ТОЧНО та сама назва, яку ви дали в Jenkins Tools для Maven
         }
 
     stages {
@@ -22,7 +22,7 @@ pipeline {
             steps {
                 echo 'Building the project...'
                 // Компіляція проекту за допомогою Maven Wrapper
-                sh './mvnw clean compile'
+                sh 'bash ./mvnw clean compile'
             }
         }
 
@@ -30,7 +30,7 @@ pipeline {
             steps {
                 echo 'Running tests...'
                 // Запуск всіх автоматичних тестів
-                sh './mvnw test'
+                sh 'bash ./mvnw test'
             }
             post {
                 always {
@@ -45,7 +45,7 @@ pipeline {
             steps {
                 echo 'Packaging the application...'
                 // Збірка виконуваного JAR-файлу додатку, пропускаючи тести
-                sh './mvnw package -DskipTests'
+                sh 'bash ./mvnw package -DskipTests'
             }
         }
 
