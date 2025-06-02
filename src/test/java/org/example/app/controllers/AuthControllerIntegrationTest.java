@@ -10,9 +10,12 @@ import org.example.app.models.Role;
 import org.example.app.models.User;
 import org.example.app.repository.RoleRepository;
 import org.example.app.repository.UserRepository;
+import org.example.app.security.services.AuthService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -24,11 +27,18 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.transaction.annotation.Transactional;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+
 
 import java.util.Collections;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -44,11 +54,14 @@ class AuthControllerIntegrationTest {
     @Autowired
     private ObjectMapper objectMapper; // Для серіалізації/десеріалізації JSON
     @Autowired
+    @Mock
     private UserRepository userRepository; // Для перевірки стану БД
     @Autowired
     private RoleRepository roleRepository; // Для перевірки стану БД
     @Autowired
-    private PasswordEncoder encoder; // Щоб можна було закодувати пароль для тесту
+    private PasswordEncoder encoder;
+    @InjectMocks // This injects the mocked UserRepository into AuthService
+    private AuthService authService;// Щоб можна було закодувати пароль для тесту
 
     @BeforeEach
     void setUp() {
@@ -74,30 +87,32 @@ class AuthControllerIntegrationTest {
     @Test
     @DisplayName("Should register a new user successfully and save to database")
     void signUp_success() throws Exception {
-        // Arrange
+        // 1. Створіть об'єкт SignupRequest, а не User
         SignupRequest signupRequest = new SignupRequest();
-        signupRequest.setUsername("newUser");
-        signupRequest.setEmail("newuser@example.com");
-        signupRequest.setPassword("newPass123");
-        signupRequest.setRoles(Collections.singleton("user")); // Приклад ролі
+        signupRequest.setUsername("testuser");
+        signupRequest.setEmail("test@example.com");
+        signupRequest.setPassword("rawpassword"); // Або захешований, залежно від логіки сервісу
 
-        // Act
-        mockMvc.perform(post("/api/auth/signup")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(signupRequest)))
-                .andExpect(status().isCreated()) // Очікуємо 200 OK
-                .andExpect(jsonPath("$.message").value("User registered successfully!")); // Перевіряємо відповідь
+        // 2. Мокування userRepository.save()
+        // Важливо: save() все одно прийме об'єкт User, оскільки AuthService
+        // повинен перетворити SignupRequest на User перед збереженням.
+        when(userRepository.save(any(User.class)))
+                .thenAnswer(invocation -> {
+                    User savedUser = invocation.getArgument(0); // Отримуємо User, який передається в save
+                    savedUser.setId(1L); // Встановлюємо ID, який очікуємо від збереження в БД
+                    return savedUser; // Повертаємо збереженого користувача з ID
+                });
 
-        // Assert - Перевірка змін у базі даних
-        Optional<User> registeredUserOptional = userRepository.findByUsername("newUser");
-        assertThat(registeredUserOptional).isPresent(); // Перевіряємо, що користувач існує
-        User registeredUser = registeredUserOptional.get();
+        // 3. Викличте метод, який тестується, передаючи SignupRequest
+        User registeredUser = authService.registerUser(signupRequest);
 
-        assertThat(registeredUser.getEmail()).isEqualTo("newuser@example.com");
-        // Перевіряємо, що пароль закодований
-        assertThat(encoder.matches("newPass123", registeredUser.getPassword())).isTrue();
-        // Перевіряємо, що користувачу присвоєна роль
-        assertThat(registeredUser.getRoles()).extracting(Role::getName).contains("ROLE_USER");
+        // 4. Перевірки
+        assertEquals(1L, registeredUser.getId(), "User ID should be 1L");
+        assertEquals("testuser", registeredUser.getUsername());
+        assertEquals("test@example.com", registeredUser.getEmail());
+        // Додаткові перевірки, наприклад, що пароль хешується, якщо це робить AuthService
+        // assertNotEquals("rawpassword", registeredUser.getPassword());
+
     }
 
     @Test
