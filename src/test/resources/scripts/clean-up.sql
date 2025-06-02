@@ -1,0 +1,9 @@
+
+DELETE FROM user_roles;
+
+
+DELETE FROM users;
+
+
+DBCC CHECKIDENT ('users', RESEED, 0);
+DBCC CHECKIDENT ('roles', RESEED, 0);
