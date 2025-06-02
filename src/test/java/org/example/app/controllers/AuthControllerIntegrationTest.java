@@ -100,6 +100,28 @@ class AuthControllerIntegrationTest {
         }
 
     }
+    protected String obtainJwtToken(String username, String password) throws Exception {
+        LoginRequest loginRequest = new LoginRequest(username, password);
+        String loginRequestBody = objectMapper.writeValueAsString(loginRequest);
+
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.post("/api/auth/signin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginRequestBody))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String responseBody = result.getResponse().getContentAsString();
+        System.out.println("Login Response Body: " + responseBody); // <-- Додайте це!
+
+        // Змініть цю логіку, щоб вона точно відповідала структурі вашої відповіді
+        // Наприклад, якщо ваша відповідь - це клас JwtResponse:
+        JwtResponse jwtResponse = objectMapper.readValue(responseBody, JwtResponse.class);
+        String accessToken = jwtResponse.getAccessToken(); // Перевірте, що у JwtResponse є getAccessToken()
+
+        System.out.println("Obtained JWT Token: " + accessToken); // <-- Додайте це!
+
+        return accessToken;
+    }
 
     // Самостійна робота: Інтеграційний тест для публічного ендпоінта /api/auth/signup
     @Test
