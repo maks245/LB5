@@ -107,19 +107,20 @@ class AuthControllerIntegrationTest {
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders.post("/api/auth/signin")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(loginRequestBody))
-                .andExpect(status().isOk())
+                .andExpect(status().isOk()) // <--- ЦЕ ДУЖЕ ВАЖЛИВО!
                 .andReturn();
 
         String responseBody = result.getResponse().getContentAsString();
-        System.out.println("Login Response Body: " + responseBody); // <-- Додайте це!
+        System.out.println("Login Response Body: " + responseBody); // Для налагодження
 
-        // Змініть цю логіку, щоб вона точно відповідала структурі вашої відповіді
-        // Наприклад, якщо ваша відповідь - це клас JwtResponse:
+        // Переконайтесь, що структура JwtResponse відповідає вашій реальній
         JwtResponse jwtResponse = objectMapper.readValue(responseBody, JwtResponse.class);
-        String accessToken = jwtResponse.getAccessToken(); // Перевірте, що у JwtResponse є getAccessToken()
+        String accessToken = jwtResponse.getAccessToken();
 
-        System.out.println("Obtained JWT Token: " + accessToken); // <-- Додайте це!
-
+        System.out.println("Obtained JWT Token: " + accessToken); // Для налагодження
+// У obtainJwtToken методі
+        System.out.println("Login Response Body: " + responseBody);
+        System.out.println("Obtained JWT Token: " + accessToken);
         return accessToken;
     }
 
