@@ -30,7 +30,7 @@ class AuthServiceTest {
     @Mock
     private UserRepository userRepository;
 
-    @Mock
+    @Mock // ДОДАЙТЕ ЦЕЙ МОК
     private RoleRepository roleRepository;
 
     @Mock
@@ -68,31 +68,50 @@ class AuthServiceTest {
     @Test
     @DisplayName("Should successfully register a new user with default role")
     void registerUser_whenUserIsNew_shouldRegisterSuccessfully() {
-        // 1. Створіть об'єкт SignupRequest, а не User
         SignupRequest signupRequest = new SignupRequest();
         signupRequest.setUsername("testuser");
         signupRequest.setEmail("test@example.com");
-        signupRequest.setPassword("rawpassword"); // Або захешований, залежно від логіки сервісу
+        signupRequest.setPassword("rawpassword");
 
-        // 2. Мокування userRepository.save()
-        // Важливо: save() все одно прийме об'єкт User, оскільки AuthService
-        // повинен перетворити SignupRequest на User перед збереженням.
+        // 1. Мокування userRepository.save()
         when(userRepository.save(any(User.class)))
                 .thenAnswer(invocation -> {
-                    User savedUser = invocation.getArgument(0); // Отримуємо User, який передається в save
-                    savedUser.setId(1L); // Встановлюємо ID, який очікуємо від збереження в БД
-                    return savedUser; // Повертаємо збереженого користувача з ID
+                    User savedUser = invocation.getArgument(0);
+                    savedUser.setId(1L);
+                    return savedUser;
                 });
 
-        // 3. Викличте метод, який тестується, передаючи SignupRequest
+        // 2. Мокування roleRepository.findByName()
+        // Створіть об'єкт Role і встановіть його ім'я як String
+        Role userRole = new Role();
+        userRole.setId(1L); // Присвойте ID, якщо ваша модель Role його має
+        userRole.setName("ROLE_USER"); // Встановіть назву ролі як рядок!
+
+        // МОКУВАННЯ: Коли RoleRepository.findByName("ROLE_USER") викликається,
+        // повернути Optional, що містить створену Role
+        when(roleRepository.findByName("ROLE_USER"))
+                .thenReturn(Optional.of(userRole));
+
+        // Якщо ви використовуєте PasswordEncoder в AuthService, його також потрібно мокнути
+        // if (passwordEncoder != null) {
+        //     when(passwordEncoder.encode(any(String.class))).thenReturn("encodedPassword");
+        // }
+
+
         User registeredUser = authService.registerUser(signupRequest);
 
-        // 4. Перевірки
         assertEquals(1L, registeredUser.getId(), "User ID should be 1L");
         assertEquals("testuser", registeredUser.getUsername());
         assertEquals("test@example.com", registeredUser.getEmail());
-        // Додаткові перевірки, наприклад, що пароль хешується, якщо це робить AuthService
-        // assertNotEquals("rawpassword", registeredUser.getPassword());
+
+        // Опційно: перевірте, чи був викликаний findByName з правильним аргументом
+        verify(roleRepository).findByName("ROLE_USER");
+
+        // Додаткові перевірки (наприклад, що користувачу була встановлена роль)
+        // assertNotNull(registeredUser.getRoles());
+        // assertFalse(registeredUser.getRoles().isEmpty());
+        // assertTrue(registeredUser.getRoles().stream().anyMatch(r -> "ROLE_USER".equals(r.getName())));
+
     }
 
     // Тест на обробку виняткової ситуації (користувач з таким ім'ям вже існує)
