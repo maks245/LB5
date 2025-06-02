@@ -62,9 +62,9 @@ pipeline {
             }
         }
 
-        /* // Опціональний етап: Збірка Docker-образу (для підвищення складності)
+        // Опціональний етап: Збірка Docker-образу (для підвищення складності)
         // Цей етап вимагає доступу Jenkins до Docker демона хоста
-        stage('Build Docker Image') {
+        /* stage('Build Docker Image') {
             steps {
                 echo 'Building Docker image...'
                 script {
