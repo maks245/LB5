@@ -84,7 +84,7 @@ class AuthControllerIntegrationTest {
         // Перевіряємо, чи існує користувач з таким ім'ям, щоб уникнути дублікатів,
         // якщо setUp викликається кілька разів у межах одного профілю (хоча @BeforeEach має очищати)
         if (userRepository.findByUsername("testuser").isEmpty()) {
-            User testUser = new User("testuser", "test@example.com", encoder.encode("password"));
+            User testUser = new User("testuser", "test@example.com", encoder.encode("password123"));
             Set<Role> roles = new HashSet<>();
             roles.add(userRole); // Додаємо роль "ROLE_USER"
             testUser.setRoles(roles);
