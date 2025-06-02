@@ -21,16 +21,19 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Building the project...'
-                // Компіляція проекту за допомогою Maven Wrapper
-                sh 'bash ./mvnw clean compile'
+                 withEnv(["JAVA_HOME=${tool 'JDK-21'}"]) { // ВИКОРИСТОВУЙТЕ НАЗВУ ВАШОГО JDK З JENKINS UI
+                                    sh 'bash ./mvnw clean compile'
+                                }
+
             }
         }
 
         stage('Test') {
             steps {
                 echo 'Running tests...'
-                // Запуск всіх автоматичних тестів
-                sh 'bash ./mvnw test'
+                 withEnv(["JAVA_HOME=${tool 'JDK-21'}"]) { // ВИКОРИСТОВУЙТЕ НАЗВУ ВАШОГО JDK З JENKINS UI
+                                    sh 'bash ./mvnw test'
+                                }
             }
             post {
                 always {
@@ -44,8 +47,9 @@ pipeline {
         stage('Package') {
             steps {
                 echo 'Packaging the application...'
-                // Збірка виконуваного JAR-файлу додатку, пропускаючи тести
-                sh 'bash ./mvnw package -DskipTests'
+                 withEnv(["JAVA_HOME=${tool 'JDK-21'}"]) { // ВИКОРИСТОВУЙТЕ НАЗВУ ВАШОГО JDK З JENKINS UI
+                                    sh 'bash ./mvnw package -DskipTests'
+                                }
             }
         }
 
