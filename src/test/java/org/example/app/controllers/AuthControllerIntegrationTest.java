@@ -29,7 +29,9 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -58,22 +60,45 @@ class AuthControllerIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        // Очищаємо репозиторії перед кожним тестом, якщо @Transactional не відкочує повністю
-        // Зазвичай @Transactional все робить, але можна додати для надійності,
-        // або якщо ddl-auto=none. З create-drop це не так критично.
-        // userRepository.deleteAll();
-        // roleRepository.deleteAll(); // Це може бути ризиковано, якщо ролі не створюються автоматично
+        userRepository.deleteAll(); // Видаляє користувачів, що каскадно видалить user_roles
+        roleRepository.deleteAll(); // Видаляє ролі
 
-        // Створюємо базові ролі, якщо їх немає (для AuthController та інших тестів)
-        if (roleRepository.findByName("ROLE_USER").isEmpty()) {
-            roleRepository.save(new Role("ROLE_USER")); // Без вказання ID
+        // 1. Ініціалізація ролей (якщо вони ще не існують)
+        // Використовуємо Optional для безпечної перевірки наявності
+        String userRoleName = "ROLE_USER";
+        String adminRoleName = "ROLE_ADMIN";
+        String moderatorRoleName = "ROLE_MODERATOR";
+
+        Role userRole = roleRepository.findByName(userRoleName)
+                .orElseGet(() -> roleRepository.save(new Role(userRoleName)));
+
+        Role adminRole = roleRepository.findByName(adminRoleName)
+                .orElseGet(() -> roleRepository.save(new Role(adminRoleName)));
+
+        Role moderatorRole = roleRepository.findByName(moderatorRoleName)
+                .orElseGet(() -> roleRepository.save(new Role(moderatorRoleName)));
+
+
+        // 2. Створення тестового користувача
+        // Перевіряємо, чи існує користувач з таким ім'ям, щоб уникнути дублікатів,
+        // якщо setUp викликається кілька разів у межах одного профілю (хоча @BeforeEach має очищати)
+        if (userRepository.findByUsername("testuser").isEmpty()) {
+            User testUser = new User("testuser", "test@example.com", encoder.encode("password"));
+            Set<Role> roles = new HashSet<>();
+            roles.add(userRole); // Додаємо роль "ROLE_USER"
+            testUser.setRoles(roles);
+            userRepository.save(testUser);
         }
-        if (roleRepository.findByName("ROLE_ADMIN").isEmpty()) {
-            roleRepository.save(new Role("ROLE_ADMIN")); // Без вказання ID
+
+        // Можна створити й інших тестових користувачів, наприклад, адміністратора
+        if (userRepository.findByUsername("adminuser").isEmpty()) {
+            User adminUser = new User("adminuser", "admin@example.com", encoder.encode("adminpassword"));
+            Set<Role> roles = new HashSet<>();
+            roles.add(adminRole); // Додаємо роль "ROLE_ADMIN"
+            adminUser.setRoles(roles);
+            userRepository.save(adminUser);
         }
-        if (roleRepository.findByName("ROLE_MODERATOR").isEmpty()) {
-            roleRepository.save(new Role("ROLE_MODERATOR")); // Без вказання ID
-        }
+
     }
 
     // Самостійна робота: Інтеграційний тест для публічного ендпоінта /api/auth/signup
