@@ -1,5 +1,6 @@
 package org.example.app.controllers;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
 import org.example.app.dto.JwtResponse; // Переконайтесь, що цей DTO існує
@@ -104,24 +105,37 @@ class AuthControllerIntegrationTest {
         LoginRequest loginRequest = new LoginRequest(username, password);
         String loginRequestBody = objectMapper.writeValueAsString(loginRequest);
 
+        System.out.println("Attempting to sign in with username: " + username + ", password: " + password); // DEBUG
+
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders.post("/api/auth/signin")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(loginRequestBody))
-                .andExpect(status().isOk()) // <--- ЦЕ ДУЖЕ ВАЖЛИВО!
+                .andExpect(status().isOk()) // ЦЕЙ АСЕРТ ПОВИНЕН ПРОЙТИ! Якщо ні, проблема в логіні.
                 .andReturn();
 
         String responseBody = result.getResponse().getContentAsString();
-        System.out.println("Login Response Body: " + responseBody); // Для налагодження
+        System.out.println("Login Response Status: " + result.getResponse().getStatus()); // DEBUG
+        System.out.println("Login Response Body: " + responseBody); // DEBUG
 
-        // Переконайтесь, що структура JwtResponse відповідає вашій реальній
-        JwtResponse jwtResponse = objectMapper.readValue(responseBody, JwtResponse.class);
-        String accessToken = jwtResponse.getAccessToken();
-
-        System.out.println("Obtained JWT Token: " + accessToken); // Для налагодження
-// У obtainJwtToken методі
-        System.out.println("Login Response Body: " + responseBody);
-        System.out.println("Obtained JWT Token: " + accessToken);
-        return accessToken;
+        // Варіант 1: якщо у вас є клас JwtResponse
+        try {
+            JwtResponse jwtResponse = objectMapper.readValue(responseBody, JwtResponse.class);
+            String accessToken = jwtResponse.getAccessToken();
+            System.out.println("Obtained JWT Token (from JwtResponse): " + accessToken); // DEBUG
+            return accessToken;
+        } catch (Exception e) {
+            System.err.println("Error parsing Login Response Body into JwtResponse: " + e.getMessage()); // DEBUG
+            // Варіант 2: якщо клас JwtResponse відсутній або не працює, спробуйте парсити через JsonNode
+            try {
+                JsonNode jsonNode = objectMapper.readTree(responseBody);
+                String accessToken = jsonNode.get("accessToken").asText(); // АБО jsonNode.get("token").asText(), залежить від вашого API
+                System.out.println("Obtained JWT Token (from JsonNode): " + accessToken); // DEBUG
+                return accessToken;
+            } catch (Exception e2) {
+                System.err.println("Error parsing Login Response Body as JsonNode: " + e2.getMessage()); // DEBUG
+                throw new RuntimeException("Failed to obtain JWT token from response", e2);
+            }
+        }
     }
 
     // Самостійна робота: Інтеграційний тест для публічного ендпоінта /api/auth/signup
