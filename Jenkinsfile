@@ -1,5 +1,5 @@
 pipeline {
-    agent any
+    agent { label 'docker-minikube-agent' }
 
     tools {
         jdk 'JDK-21'
