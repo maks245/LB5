@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lb5-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lb5
+  template:
+    metadata:
+      labels:
+        app: lb5
+    spec:
+      containers:
+        - name: lb5
+          image: lb5:latest
+          ports:
+            - containerPort: 8080
